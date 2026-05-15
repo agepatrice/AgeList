@@ -1,0 +1,415 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.dash{padding:1rem 0;font-family:var(--font-sans)}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:1.25rem}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.65rem 1rem}
+.stat-card .label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-card .val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+.filter-btn{font-size:12px;padding:5px 11px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.task-list{display:flex;flex-direction:column;gap:6px}
+.task-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:start;gap:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:.65rem .9rem;cursor:pointer;transition:border-color .15s}
+.task-row:hover{border-color:var(--color-border-primary)}
+.task-row.done{opacity:.4}
+.priority-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.p-high{background:#E24B4A}.p-med{background:#EF9F27}.p-low{background:#1D9E75}
+.task-name{font-size:14px;color:var(--color-text-primary);font-weight:500;line-height:1.4}
+.task-meta{font-size:12px;color:var(--color-text-secondary);margin-top:3px;line-height:1.5}
+.task-tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:4px;font-weight:500}
+.status-badge{font-size:11px;padding:3px 8px;border-radius:10px;white-space:nowrap;font-weight:500;align-self:start}
+.s-notstarted{background:#F1EFE8;color:#5F5E5A}
+.s-inprogress{background:#E6F1FB;color:#185FA5}
+.s-waiting{background:#FAEEDA;color:#854F0B}
+.s-done{background:#EAF3DE;color:#1D9E75}
+.check-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;margin-top:2px;padding:0}
+.check-btn.checked{background:#1D9E75;border-color:#1D9E75;color:white}
+.section-label{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 .4rem;padding-left:2px}
+.empty{text-align:center;padding:2rem;color:var(--color-text-secondary);font-size:14px}
+.action-row{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+
+/* Modal */
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:flex-start;justify-content:center;padding-top:40px;z-index:100}
+.modal{background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-secondary);padding:1.25rem;width:100%;max-width:480px;position:relative}
+.modal h3{font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:1rem}
+.form-row{margin-bottom:.75rem}
+.form-row label{display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary)}
+.form-row textarea{resize:vertical;min-height:60px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
+.btn-primary{font-size:13px;padding:6px 16px;border-radius:var(--border-radius-md);border:none;background:var(--color-text-primary);color:var(--color-background-primary);cursor:pointer;font-weight:500}
+.btn-secondary{font-size:13px;padding:6px 16px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.btn-danger{font-size:12px;padding:4px 10px;border-radius:var(--border-radius-md);border:0.5px solid #F09595;background:transparent;color:#A32D2D;cursor:pointer}
+
+/* Notes panel */
+.notes-panel{background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:.9rem 1rem;margin-top:6px;grid-column:1/-1}
+.notes-panel p{font-size:13px;color:var(--color-text-primary);line-height:1.6;white-space:pre-wrap}
+
+/* Category pill colors */
+.cat-color-0{background:#FBEAF0;color:#993556}
+.cat-color-1{background:#E6F1FB;color:#185FA5}
+.cat-color-2{background:#EAF3DE;color:#3B6D11}
+.cat-color-3{background:#FAEEDA;color:#854F0B}
+.cat-color-4{background:#EEEDFE;color:#534AB7}
+.cat-color-5{background:#E1F5EE;color:#0F6E56}
+.cat-color-6{background:#FAECE7;color:#993C1D}
+.cat-color-7{background:#F1EFE8;color:#5F5E5A}
+.cat-color-8{background:#FCEBEB;color:#A32D2D}
+.cat-color-9{background:#EAF3DE;color:#1D9E75}
+
+.color-swatch{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.color-swatch.selected{border-color:var(--color-text-primary)}
+</style>
+
+<div class="dash" id="app" style="position:relative;min-height:400px">
+  <h2 class="sr-only">Age's life dashboard — task manager</h2>
+
+  <div class="top-bar">
+    <span style="font-size:18px;font-weight:500;color:var(--color-text-primary)" id="date-label"></span>
+    <input type="text" id="search" placeholder="Search tasks..." style="font-size:13px;padding:5px 10px;width:180px;border-radius:20px" />
+  </div>
+
+  <div class="stats" id="stats-bar"></div>
+
+  <div class="action-row">
+    <button class="btn-primary" onclick="openAddTask()" style="font-size:13px"><i class="ti ti-plus" aria-hidden="true"></i> Add task</button>
+    <button class="btn-secondary" onclick="openManageCategories()" style="font-size:13px"><i class="ti ti-tag" aria-hidden="true"></i> Manage categories</button>
+  </div>
+
+  <div class="filters" id="filter-bar"></div>
+  <div class="task-list" id="task-list"></div>
+
+  <!-- Modals rendered here -->
+  <div id="modal-root"></div>
+</div>
+
+<script>
+const SWATCH_COLORS=[
+  {bg:"#FBEAF0",text:"#993556"},
+  {bg:"#E6F1FB",text:"#185FA5"},
+  {bg:"#EAF3DE",text:"#3B6D11"},
+  {bg:"#FAEEDA",text:"#854F0B"},
+  {bg:"#EEEDFE",text:"#534AB7"},
+  {bg:"#E1F5EE",text:"#0F6E56"},
+  {bg:"#FAECE7",text:"#993C1D"},
+  {bg:"#F1EFE8",text:"#5F5E5A"},
+  {bg:"#FCEBEB",text:"#A32D2D"},
+  {bg:"#EAF3DE",text:"#1D9E75"},
+];
+
+let categories=[
+  {id:"mk",name:"Mary Kay",colorIdx:0},
+  {id:"personal",name:"Personal",colorIdx:1},
+  {id:"dentist",name:"Dentist",colorIdx:2},
+  {id:"financial",name:"Financial",colorIdx:3},
+  {id:"vsu",name:"VSU Alumni",colorIdx:4},
+  {id:"therapist",name:"Therapist",colorIdx:5},
+  {id:"psychiatrist",name:"Psychiatrist",colorIdx:6},
+  {id:"kaiser",name:"Kaiser",colorIdx:7},
+];
+
+let nextCatId=100;
+let nextTaskId=200;
+let expandedTask=null;
+let activeFilter="all";
+let searchVal="";
+
+let tasks=[
+  {id:1,name:"Set up summer product reveal with Sirata",catId:"mk",due:"2026-05-06",status:"In Progress",priority:"HIGH",notes:"Look up free dates on calendar. Asked for her number, texted to set up party"},
+  {id:2,name:"Buy flowers for Tiffany",catId:"personal",due:"2026-05-09",status:"Waiting",priority:"LOW",notes:"Mom said maybe something else"},
+  {id:3,name:"Follow up with Delphine",catId:"mk",due:"2026-05-09",status:"Waiting",priority:"HIGH",notes:"vkeelermk"},
+  {id:4,name:"Chelsea recruiting outreach",catId:"mk",due:"2026-05-09",status:"Waiting",priority:"HIGH",notes:"vkeelermk"},
+  {id:5,name:"Confirm order with Paula",catId:"mk",due:"2026-05-09",status:"In Progress",priority:"MEDIUM",notes:"Next week she is going to do a foundation testing"},
+  {id:6,name:"Set up summer reveal and hydration mask facial with Starr",catId:"mk",due:"2026-05-09",status:"In Progress",priority:"MEDIUM",notes:"St. Louis hotel"},
+  {id:7,name:"Look up both dentist info and see if they take my insurance",catId:"dentist",due:"2026-05-07",status:"In Progress",priority:"MEDIUM",notes:"Solstice Dental Insurance — Pure Dental and Renova Smiles"},
+  {id:8,name:"Look for therapist and psychiatrist info on KP app",catId:"therapist",due:"2026-05-07",status:"Not Started",priority:"MEDIUM",notes:""},
+  {id:9,name:"Pick a therapist",catId:"therapist",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Figure out criteria you want"},
+  {id:10,name:"Pick a psychiatrist",catId:"psychiatrist",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Figure out criteria you want"},
+  {id:11,name:"Set up therapy appointment",catId:"therapist",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Have calendar ready"},
+  {id:12,name:"Set up psychiatrist appointment",catId:"psychiatrist",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Have calendar ready"},
+  {id:13,name:"Speak with financial advisor",catId:"financial",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Questions are on the financial paperwork dad gave me"},
+  {id:14,name:"Set up dentist appointment",catId:"dentist",due:"2026-05-07",status:"Not Started",priority:"LOW",notes:"Have calendar ready"},
+  {id:15,name:"Work on Scholarship Banquet Program",catId:"vsu",due:"",status:"Waiting",priority:"LOW",notes:"Look up GroupMe message — think she emailed me"},
+  {id:16,name:"Primary Care Provider",catId:"kaiser",due:"",status:"Waiting",priority:"LOW",notes:"vkeelermk"},
+  {id:17,name:"Rainah — movies follow up",catId:"mk",due:"2026-05-09",status:"Not Started",priority:"LOW",notes:"vkeelermk"},
+  {id:18,name:"Send Sierra price for soap",catId:"mk",due:"2026-05-06",status:"In Progress",priority:"LOW",notes:""},
+  {id:19,name:"Gather Sierra soap order",catId:"mk",due:"2026-05-06",status:"Not Started",priority:"LOW",notes:""},
+  {id:20,name:"Deliver Sierra soap order",catId:"mk",due:"",status:"Not Started",priority:"LOW",notes:""},
+  {id:21,name:"Makeup video edit",catId:"mk",due:"",status:"Not Started",priority:"LOW",notes:""},
+  {id:22,name:"Look through messages and see what new tasks need to be added",catId:"mk",due:"2026-05-07",status:"In Progress",priority:"HIGH",notes:""},
+  {id:23,name:"Post Save the Date video",catId:"vsu",due:"",status:"Waiting",priority:"LOW",notes:""},
+  {id:24,name:"Follow up with Tamika",catId:"mk",due:"2026-05-08",status:"Not Started",priority:"LOW",notes:""},
+  {id:25,name:"Ask mom about Alexis",catId:"mk",due:"2026-05-08",status:"Not Started",priority:"LOW",notes:""},
+  {id:26,name:"Ask Kathi to host party",catId:"mk",due:"2026-05-06",status:"In Progress",priority:"HIGH",notes:"vkeelermk"},
+  {id:27,name:"Young lady from Youth Symposium — ask if she's free",catId:"mk",due:"2026-05-06",status:"In Progress",priority:"HIGH",notes:"215 number"},
+  {id:28,name:"Bring summer clothes to parents' house",catId:"personal",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:29,name:"Drop off condolence card to Chelsea",catId:"mk",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:30,name:"Look for scarlett red lipstick for Paula",catId:"mk",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:31,name:"See if 5/11 or 5/14 is better for Paula to stop by",catId:"mk",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:32,name:"Confirm date with Paula and send her item list",catId:"mk",due:"",status:"Not Started",priority:"HIGH",notes:"Foundation, Cologne, CC Cream, Eyeliner, New mascara, sponge"},
+  {id:33,name:"Think of voice acting questions",catId:"personal",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:34,name:"See if free Wednesday for swim class",catId:"personal",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:35,name:"Angel script for 5 contacts",catId:"mk",due:"",status:"Not Started",priority:"HIGH",notes:""},
+  {id:36,name:"Ask Xfinity person how to sign up and let her know new date",catId:"personal",due:"",status:"Not Started",priority:"HIGH",notes:"Look up her number"},
+  {id:37,name:"Gather Paula's order",catId:"mk",due:"2026-05-15",status:"Not Started",priority:"LOW",notes:""},
+  {id:38,name:"Add footage from church to Canva",catId:"personal",due:"",status:"Not Started",priority:"LOW",notes:""},
+  {id:39,name:"Finish putting in orders",catId:"mk",due:"2026-04-30",status:"Done",priority:"LOW",notes:""},
+  {id:40,name:"Look for financial paper dad gave me",catId:"financial",due:"2026-05-03",status:"Done",priority:"LOW",notes:"Believed to be in purse"},
+  {id:41,name:"Finish filling out financial info dad gave me",catId:"financial",due:"2026-05-05",status:"Done",priority:"LOW",notes:"Rent: $1,675"},
+  {id:42,name:"Look through FinFit app",catId:"financial",due:"2026-05-05",status:"Done",priority:"LOW",notes:""},
+  {id:43,name:"Look up dentist names Kelli and dad recommended",catId:"dentist",due:"2026-05-06",status:"Done",priority:"HIGH",notes:"Pure Dental and Renova Smiles"},
+  {id:44,name:"Find/Package Bailey's products",catId:"mk",due:"2026-05-06",status:"Done",priority:"LOW",notes:""},
+  {id:45,name:"Redo VSU Casino Save the Date Flyer",catId:"vsu",due:"2026-05-03",status:"Done",priority:"LOW",notes:""},
+  {id:46,name:"Look up my dental insurance info",catId:"dentist",due:"2026-05-06",status:"Done",priority:"LOW",notes:"Solstice Dental Insurance"},
+  {id:47,name:"Make flyer for mom",catId:"mk",due:"2026-05-06",status:"Done",priority:"LOW",notes:""},
+  {id:48,name:"Deliver Bailey's products",catId:"mk",due:"2026-05-08",status:"Done",priority:"LOW",notes:""},
+  {id:49,name:"Deliver Paula's order",catId:"mk",due:"2026-05-15",status:"Done",priority:"LOW",notes:""},
+  {id:50,name:"Send Bailey price for Cash App",catId:"mk",due:"2026-05-08",status:"Done",priority:"LOW",notes:""},
+  {id:51,name:"Montgomery lipstick",catId:"mk",due:"",status:"Done",priority:"LOW",notes:""},
+  {id:52,name:"$1000 babe Edna",catId:"mk",due:"",status:"Done",priority:"LOW",notes:""},
+];
+
+let doneSet=new Set(tasks.filter(t=>t.status==="Done").map(t=>t.id));
+
+function getCat(id){return categories.find(c=>c.id===id)||{name:"Other",colorIdx:7}}
+function tagStyle(cat){const c=SWATCH_COLORS[cat.colorIdx]||SWATCH_COLORS[7];return`background:${c.bg};color:${c.text}`;}
+function fmtDate(d){if(!d)return"";const dt=new Date(d+"T00:00:00");return dt.toLocaleDateString("en-US",{month:"short",day:"numeric"});}
+function priorityClass(p){return p==="HIGH"?"p-high":p==="MEDIUM"?"p-med":"p-low"}
+function statusClass(s,done){if(done)return"s-done";if(s==="In Progress")return"s-inprogress";if(s==="Waiting")return"s-waiting";return"s-notstarted"}
+function statusLabel(s,done){return done?"Done":s}
+
+function renderStats(){
+  const active=tasks.filter(t=>!doneSet.has(t.id));
+  document.getElementById("stats-bar").innerHTML=`
+    <div class="stat-card"><div class="label">High priority</div><div class="val" style="color:#E24B4A">${active.filter(t=>t.priority==="HIGH").length}</div></div>
+    <div class="stat-card"><div class="label">In progress</div><div class="val" style="color:#185FA5">${active.filter(t=>t.status==="In Progress").length}</div></div>
+    <div class="stat-card"><div class="label">Mary Kay</div><div class="val" style="color:#993556">${active.filter(t=>t.catId==="mk").length}</div></div>
+    <div class="stat-card"><div class="label">Completed</div><div class="val" style="color:#1D9E75">${doneSet.size}</div></div>
+  `;
+}
+
+function renderFilters(){
+  const bar=document.getElementById("filter-bar");
+  const built=[
+    {key:"all",label:"All tasks"},
+    {key:"high",label:"🔴 High priority"},
+    {key:"active",label:"Active only"},
+    {key:"done",label:"Completed"},
+  ];
+  const catBtns=categories.map(c=>`<button class="filter-btn${activeFilter===c.id?" active":""}" onclick="setFilter('${c.id}')">${c.name}</button>`).join("");
+  bar.innerHTML=built.map(b=>`<button class="filter-btn${activeFilter===b.key?" active":""}" onclick="setFilter('${b.key}')">${b.label}</button>`).join("")+catBtns;
+}
+
+function setFilter(f){activeFilter=f;renderFilters();renderTasks();}
+
+function filterTasks(){
+  let list=[...tasks];
+  if(searchVal){const q=searchVal.toLowerCase();list=list.filter(t=>t.name.toLowerCase().includes(q)||(t.notes||"").toLowerCase().includes(q)||(getCat(t.catId).name||"").toLowerCase().includes(q));}
+  if(activeFilter==="high") list=list.filter(t=>t.priority==="HIGH"&&!doneSet.has(t.id));
+  else if(activeFilter==="active") list=list.filter(t=>!doneSet.has(t.id));
+  else if(activeFilter==="done") list=list.filter(t=>doneSet.has(t.id));
+  else if(!["all"].includes(activeFilter)) list=list.filter(t=>t.catId===activeFilter);
+  list.sort((a,b)=>{
+    const aD=doneSet.has(a.id)?1:0,bD=doneSet.has(b.id)?1:0;
+    if(aD!==bD)return aD-bD;
+    const pm={HIGH:0,MEDIUM:1,LOW:2};
+    return (pm[a.priority]||2)-(pm[b.priority]||2);
+  });
+  return list;
+}
+
+function renderTasks(){
+  renderStats();
+  const list=filterTasks();
+  const el=document.getElementById("task-list");
+  if(!list.length){el.innerHTML='<div class="empty">No tasks match this filter</div>';return;}
+  let html="",lastSec="";
+  list.forEach(t=>{
+    const done=doneSet.has(t.id);
+    const sec=done?"Completed":t.priority==="HIGH"?"High priority":t.priority==="MEDIUM"?"Medium priority":"Lower priority";
+    if(sec!==lastSec&&(activeFilter==="all"||activeFilter==="active")){html+=`<div class="section-label">${sec}</div>`;lastSec=sec;}
+    const cat=getCat(t.catId);
+    const expanded=expandedTask===t.id;
+    html+=`<div class="task-row${done?" done":""}" style="display:grid;grid-template-columns:auto 1fr auto auto" onclick="toggleExpand(${t.id},event)">
+      <button class="check-btn${done?" checked":""}" onclick="toggleDone(${t.id},event)" aria-label="Mark complete">${done?'<i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i>':""}</button>
+      <div>
+        <div class="task-name">${t.name}</div>
+        <div class="task-meta">
+          <span class="task-tag" style="${tagStyle(cat)}">${cat.name}</span>
+          ${t.due?`<span>Due ${fmtDate(t.due)}</span>`:""}
+        </div>
+        ${expanded&&t.notes?`<div style="margin-top:6px;font-size:13px;color:var(--color-text-secondary);line-height:1.5;white-space:pre-wrap">${t.notes}</div>`:""}
+        ${expanded?`<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-secondary" style="font-size:12px;padding:4px 10px" onclick="openEditTask(${t.id},event)"><i class="ti ti-edit" style="font-size:12px" aria-hidden="true"></i> Edit</button>
+          <button class="btn-danger" onclick="deleteTask(${t.id},event)"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i> Delete</button>
+        </div>`:""}
+      </div>
+      <span class="status-badge ${statusClass(t.status,done)}">${statusLabel(t.status,done)}</span>
+      <div class="priority-dot ${priorityClass(t.priority)}" title="${t.priority} priority"></div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function toggleExpand(id,e){if(e.target.closest(".check-btn,.btn-secondary,.btn-danger"))return;expandedTask=expandedTask===id?null:id;renderTasks();}
+function toggleDone(id,e){e.stopPropagation();if(doneSet.has(id))doneSet.delete(id);else doneSet.add(id);renderTasks();}
+function deleteTask(id,e){e.stopPropagation();if(confirm("Delete this task?")){tasks=tasks.filter(t=>t.id!==id);doneSet.delete(id);expandedTask=null;renderTasks();}}
+
+/* ---- Add/Edit Task Modal ---- */
+function openAddTask(){
+  const catOptions=categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  showModal(`
+    <h3>Add new task</h3>
+    <div class="form-row"><label>Task name</label><input id="m-name" type="text" placeholder="What needs to get done?" /></div>
+    <div class="form-row"><label>Category</label><select id="m-cat">${catOptions}</select></div>
+    <div class="form-row"><label>Priority</label><select id="m-priority"><option value="HIGH">🔴 High</option><option value="MEDIUM">🟡 Medium</option><option value="LOW">🟢 Low</option></select></div>
+    <div class="form-row"><label>Status</label><select id="m-status"><option>Not Started</option><option>In Progress</option><option>Waiting</option><option>Done</option></select></div>
+    <div class="form-row"><label>Due date (optional)</label><input id="m-due" type="date" /></div>
+    <div class="form-row"><label>Notes (optional)</label><textarea id="m-notes" placeholder="Any details, reminders, or context..."></textarea></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewTask()">Add task</button>
+    </div>
+  `);
+}
+
+function saveNewTask(){
+  const name=document.getElementById("m-name").value.trim();
+  if(!name)return alert("Please enter a task name");
+  const status=document.getElementById("m-status").value;
+  const t={id:nextTaskId++,name,catId:document.getElementById("m-cat").value,priority:document.getElementById("m-priority").value,status,due:document.getElementById("m-due").value,notes:document.getElementById("m-notes").value.trim()};
+  tasks.unshift(t);
+  if(status==="Done")doneSet.add(t.id);
+  closeModal();renderTasks();
+}
+
+function openEditTask(id,e){
+  e.stopPropagation();
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const catOptions=categories.map(c=>`<option value="${c.id}"${c.id===t.catId?" selected":""}>${c.name}</option>`).join("");
+  showModal(`
+    <h3>Edit task</h3>
+    <div class="form-row"><label>Task name</label><input id="m-name" type="text" value="${t.name.replace(/"/g,'&quot;')}" /></div>
+    <div class="form-row"><label>Category</label><select id="m-cat">${catOptions}</select></div>
+    <div class="form-row"><label>Priority</label><select id="m-priority"><option value="HIGH"${t.priority==="HIGH"?" selected":""}>🔴 High</option><option value="MEDIUM"${t.priority==="MEDIUM"?" selected":""}>🟡 Medium</option><option value="LOW"${t.priority==="LOW"?" selected":""}>🟢 Low</option></select></div>
+    <div class="form-row"><label>Status</label><select id="m-status"><option${t.status==="Not Started"?" selected":""}>Not Started</option><option${t.status==="In Progress"?" selected":""}>In Progress</option><option${t.status==="Waiting"?" selected":""}>Waiting</option><option${t.status==="Done"?" selected":""}>Done</option></select></div>
+    <div class="form-row"><label>Due date (optional)</label><input id="m-due" type="date" value="${t.due||""}" /></div>
+    <div class="form-row"><label>Notes</label><textarea id="m-notes">${t.notes||""}</textarea></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEditTask(${id})">Save changes</button>
+    </div>
+  `);
+}
+
+function saveEditTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const name=document.getElementById("m-name").value.trim();
+  if(!name)return alert("Please enter a task name");
+  t.name=name;t.catId=document.getElementById("m-cat").value;
+  t.priority=document.getElementById("m-priority").value;
+  t.status=document.getElementById("m-status").value;
+  t.due=document.getElementById("m-due").value;
+  t.notes=document.getElementById("m-notes").value.trim();
+  if(t.status==="Done")doneSet.add(id);else doneSet.delete(id);
+  closeModal();renderTasks();
+}
+
+/* ---- Manage Categories Modal ---- */
+let newCatColorIdx=0;
+
+function openManageCategories(){
+  renderCatModal();
+}
+
+function renderCatModal(){
+  const swatches=SWATCH_COLORS.map((c,i)=>`<div class="color-swatch${newCatColorIdx===i?" selected":""}" style="background:${c.bg};border-color:${newCatColorIdx===i?c.text:'transparent'}" onclick="pickSwatch(${i})" title="Color ${i+1}"></div>`).join("");
+  const catRows=categories.map(c=>{
+    const col=SWATCH_COLORS[c.colorIdx]||SWATCH_COLORS[7];
+    const count=tasks.filter(t=>t.catId===c.id).length;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)">
+      <div style="width:12px;height:12px;border-radius:50%;background:${col.bg};border:1.5px solid ${col.text};flex-shrink:0"></div>
+      <span style="flex:1;font-size:13px;color:var(--color-text-primary)">${c.name}</span>
+      <span style="font-size:12px;color:var(--color-text-secondary)">${count} task${count!==1?"s":""}</span>
+      <button class="btn-secondary" style="font-size:12px;padding:3px 8px" onclick="openEditCat('${c.id}')"><i class="ti ti-edit" style="font-size:12px" aria-hidden="true"></i></button>
+      ${count===0?`<button class="btn-danger" style="font-size:12px;padding:3px 8px" onclick="deleteCat('${c.id}')"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i></button>`:`<div style="width:34px"></div>`}
+    </div>`;
+  }).join("");
+  showModal(`
+    <h3>Manage categories</h3>
+    <div style="margin-bottom:1rem;max-height:220px;overflow-y:auto">${catRows||'<p style="font-size:13px;color:var(--color-text-secondary)">No categories yet</p>'}</div>
+    <div style="border-top:0.5px solid var(--color-border-tertiary);padding-top:.9rem">
+      <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:.5rem">Add new category</p>
+      <div class="form-row"><input id="cat-name-input" type="text" placeholder="Category name" /></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0 .75rem" id="swatch-row">${swatches}</div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Close</button>
+      <button class="btn-primary" onclick="addCategory()">Add category</button>
+    </div>
+  `);
+}
+
+function pickSwatch(i){newCatColorIdx=i;renderCatModal();}
+
+function addCategory(){
+  const name=document.getElementById("cat-name-input").value.trim();
+  if(!name)return alert("Please enter a category name");
+  if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase()))return alert("A category with that name already exists");
+  categories.push({id:"cat_"+(nextCatId++),name,colorIdx:newCatColorIdx});
+  newCatColorIdx=(newCatColorIdx+1)%SWATCH_COLORS.length;
+  renderFilters();renderCatModal();
+}
+
+function deleteCat(id){
+  if(!confirm("Delete this category?"))return;
+  categories=categories.filter(c=>c.id!==id);
+  renderFilters();renderCatModal();
+}
+
+function openEditCat(id){
+  const cat=categories.find(c=>c.id===id);if(!cat)return;
+  const swatches=SWATCH_COLORS.map((c,i)=>`<div class="color-swatch${cat.colorIdx===i?" selected":""}" style="background:${c.bg};border-color:${cat.colorIdx===i?c.text:'transparent'}" onclick="pickEditSwatch('${id}',${i})" title="Color ${i+1}"></div>`).join("");
+  showModal(`
+    <h3>Edit category</h3>
+    <div class="form-row"><label>Name</label><input id="edit-cat-name" type="text" value="${cat.name.replace(/"/g,'&quot;')}" /></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0 .75rem" id="edit-swatch-row">${swatches}</div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="openManageCategories()">Back</button>
+      <button class="btn-primary" onclick="saveEditCat('${id}')">Save</button>
+    </div>
+  `);
+}
+
+function pickEditSwatch(catId,i){
+  const cat=categories.find(c=>c.id===catId);if(!cat)return;
+  cat.colorIdx=i;openEditCat(catId);
+}
+
+function saveEditCat(id){
+  const cat=categories.find(c=>c.id===id);if(!cat)return;
+  const name=document.getElementById("edit-cat-name").value.trim();
+  if(!name)return alert("Please enter a name");
+  cat.name=name;
+  closeModal();renderFilters();renderTasks();
+}
+
+/* ---- Modal helpers ---- */
+function showModal(inner){
+  const root=document.getElementById("modal-root");
+  root.innerHTML=`<div class="modal-bg" onclick="bgClose(event)"><div class="modal" onclick="event.stopPropagation()">${inner}</div></div>`;
+  document.getElementById("app").style.minHeight=(root.querySelector(".modal-bg").scrollHeight+60)+"px";
+}
+function closeModal(){document.getElementById("modal-root").innerHTML="";document.getElementById("app").style.minHeight="400px";}
+function bgClose(e){if(e.target.classList.contains("modal-bg"))closeModal();}
+
+/* ---- Search ---- */
+document.getElementById("search").addEventListener("input",e=>{searchVal=e.target.value;renderTasks();});
+
+/* ---- Init ---- */
+document.getElementById("date-label").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+renderFilters();
+renderTasks();
+</script>
