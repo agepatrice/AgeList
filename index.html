@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Age's Agenda</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --mk-pink: #E8417A;
+  --mk-gold: #C8922A;
+  --noir: #1A1018;
+  --surface: #F7F3F5;
+  --card: #FFFFFF;
+  --muted: #8C7A87;
+  --border: rgba(26,16,24,0.1);
+  --overdue: #C0315D;
+  --overdue-bg: #FFF0F4;
+  --soon-bg: #FFF8EE;
+  --soon: #9B6B15;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--noir); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--noir);
+  padding: 1.4rem 1.25rem 0;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-row {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.9rem;
+}
+.header-title { font-family: 'Playfair Display', serif; font-size: 1.55rem; color: #fff; line-height: 1.1; }
+.header-title span { color: var(--mk-pink); }
+.header-date { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
+.stats { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.stat-pill {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 20px; padding: 3px 10px; font-size: 11px; color: rgba(255,255,255,0.65);
+}
+.stat-pill strong { color: var(--mk-gold); }
+.progress-wrap { height: 3px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 8px 0 10px; overflow: hidden; }
+.progress-bar { height: 3px; background: var(--mk-gold); border-radius: 10px; transition: width .4s ease; }
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-btn {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; padding: 5px 13px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  color: rgba(255,255,255,0.5); cursor: pointer; white-space: nowrap; transition: all .18s; flex-shrink: 0;
+}
+.filter-btn.active { background: var(--mk-pink); border-color: var(--mk-pink); color: #fff; }
+.filter-btn .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+/* ── SORT BAR ── */
+.sort-bar { display: flex; gap: 6px; padding: 8px 1.25rem 4px; align-items: center; }
+.sort-label { font-size: 11px; color: var(--muted); }
+.sort-btn {
+  font-size: 11px; font-family: 'DM Sans', sans-serif; padding: 3px 10px;
+  border-radius: 20px; border: 1px solid var(--border); background: var(--card);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.sort-btn.active { background: var(--noir); color: #fff; border-color: var(--noir); }
+
+/* ── MAIN ── */
+.main { padding: 0.75rem 1.25rem 1.25rem; max-width: 680px; margin: 0 auto; }
+
+/* ── ADD PANEL ── */
+.add-panel {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px; margin-bottom: 1.1rem;
+}
+.add-row { display: flex; gap: 8px; align-items: stretch; }
+.add-input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 13px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--noir);
+  outline: none; transition: border-color .18s;
+}
+.add-input:focus { border-color: var(--mk-pink); }
+.add-input::placeholder { color: var(--muted); }
+.add-btn {
+  background: var(--mk-pink); border: none; border-radius: 9px; padding: 9px 16px;
+  font-size: 20px; color: white; cursor: pointer; line-height: 1; transition: opacity .18s, transform .1s; flex-shrink: 0;
+}
+.add-btn:active { transform: scale(.95); opacity: .85; }
+.add-extras { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; align-items: center; }
+.add-select {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 7px 10px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  color: var(--noir); outline: none; cursor: pointer;
+}
+.add-note {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 8px 13px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--noir);
+  outline: none; resize: none; margin-top: 8px; transition: border-color .18s;
+}
+.add-note:focus { border-color: var(--mk-pink); }
+.add-note::placeholder { color: var(--muted); }
+.add-date {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 7px 10px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  color: var(--noir); outline: none; flex: 1; min-width: 130px;
+}
+.add-date:focus { border-color: var(--mk-pink); }
+.new-cat-btn {
+  font-size: 11px; color: var(--mk-pink); background: none; border: 1px dashed var(--mk-pink);
+  border-radius: 9px; padding: 7px 11px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap; transition: background .15s;
+}
+.new-cat-btn:hover { background: var(--overdue-bg); }
+
+/* ── SECTION HEADERS ── */
+.section-label { display: flex; align-items: center; gap: 8px; margin: 1.1rem 0 .5rem; }
+.section-label-text { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.section-line { flex: 1; height: 1px; background: var(--border); }
+.section-count { font-size: 10px; color: var(--muted); }
+.section-overdue .section-label-text { color: var(--overdue); }
+
+/* ── TASK CARDS ── */
+.task-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: .8rem 1rem; margin-bottom: 7px; display: flex; align-items: flex-start;
+  gap: 10px; cursor: pointer; transition: border-color .18s, box-shadow .18s;
+  position: relative; overflow: hidden;
+}
+.task-card:hover { border-color: rgba(26,16,24,0.2); box-shadow: 0 2px 8px rgba(26,16,24,0.06); }
+.task-card.overdue-card { border-color: rgba(192,49,93,0.25); background: #FFFCFC; }
+.task-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 12px 0 0 12px; }
+.task-card.done { opacity: .42; }
+.task-card.done .task-text { text-decoration: line-through; color: var(--muted); }
+
+.task-check {
+  width: 20px; height: 20px; border: 1.5px solid rgba(26,16,24,0.2); border-radius: 50%;
+  flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center;
+  transition: all .18s; background: transparent;
+}
+.task-card.done .task-check { background: var(--mk-pink); border-color: var(--mk-pink); }
+.task-card.done .task-check::after {
+  content: ''; display: block; width: 5px; height: 9px;
+  border: 1.5px solid white; border-left: none; border-top: none;
+  transform: rotate(45deg) translate(-1px,-1px);
+}
+
+.task-body { flex: 1; min-width: 0; }
+.task-text { font-size: 14px; color: var(--noir); line-height: 1.4; }
+.task-note { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.task-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+.cat-badge {
+  font-size: 10px; font-weight: 500; padding: 2px 8px;
+  border-radius: 20px; letter-spacing: .03em; white-space: nowrap;
+}
+.due-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  font-weight: 500; white-space: nowrap;
+}
+.due-overdue { background: var(--overdue-bg); color: var(--overdue); }
+.due-soon { background: var(--soon-bg); color: var(--soon); }
+.due-normal { background: #F0EDF3; color: #5A4060; }
+
+.priority-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.p-urgent { background: var(--mk-pink); }
+.p-high { background: var(--mk-gold); }
+.p-normal { background: #C0B0C8; }
+
+.task-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.task-action-btn {
+  background: none; border: none; font-size: 14px; color: var(--muted);
+  cursor: pointer; padding: 2px 4px; opacity: 0; transition: opacity .15s; line-height: 1;
+}
+.task-card:hover .task-action-btn { opacity: 0.5; }
+.task-action-btn:hover { opacity: 1 !important; }
+.task-edit-btn:hover { color: var(--mk-gold); }
+.task-delete-btn:hover { color: var(--mk-pink); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 13px; }
+
+/* ── DONE TOGGLE ── */
+.done-toggle {
+  background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 12px;
+  color: var(--muted); cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 6px;
+}
+.done-toggle-arrow { display: inline-block; transition: transform .2s; font-size: 10px; }
+.done-toggle.open .done-toggle-arrow { transform: rotate(90deg); }
+
+/* ── DRAWER OVERLAY ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(26,16,24,0.5);
+  z-index: 200; opacity: 0; pointer-events: none; transition: opacity .22s;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+
+.drawer {
+  position: fixed; bottom: 0; left: 0; right: 0; max-width: 680px; margin: 0 auto;
+  background: var(--card); border-radius: 20px 20px 0 0; padding: 1.5rem 1.25rem 2rem;
+  z-index: 201; transform: translateY(100%); transition: transform .28s cubic-bezier(.32,.72,0,1);
+  max-height: 90vh; overflow-y: auto;
+}
+.drawer.open { transform: translateY(0); }
+.drawer-handle { width: 40px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 1.25rem; }
+.drawer-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 1rem; color: var(--noir); }
+.drawer-field { margin-bottom: 12px; }
+.drawer-label { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+.drawer-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--noir);
+  outline: none; transition: border-color .18s;
+}
+.drawer-input:focus { border-color: var(--mk-pink); }
+.drawer-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--noir);
+  outline: none; resize: vertical; min-height: 70px; transition: border-color .18s;
+}
+.drawer-textarea:focus { border-color: var(--mk-pink); }
+.drawer-row { display: flex; gap: 8px; }
+.drawer-row .drawer-field { flex: 1; }
+.drawer-select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--noir); outline: none; cursor: pointer;
+}
+.drawer-date {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--noir); outline: none;
+}
+.drawer-btns { display: flex; gap: 8px; margin-top: 1rem; }
+.drawer-save {
+  flex: 1; background: var(--mk-pink); color: #fff; border: none; border-radius: 10px;
+  padding: 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer;
+  font-weight: 500; transition: opacity .18s;
+}
+.drawer-save:hover { opacity: .88; }
+.drawer-cancel {
+  background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 18px; font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s;
+}
+
+/* ── NEW CATEGORY MODAL ── */
+.modal {
+  position: fixed; inset: 0; background: rgba(26,16,24,0.55); z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--card); border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 360px;
+  transform: scale(.94); transition: transform .2s;
+}
+.modal.open .modal-box { transform: scale(1); }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 1rem; }
+.modal-field { margin-bottom: 12px; }
+.modal-label { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+.modal-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--noir); outline: none;
+}
+.modal-input:focus { border-color: var(--mk-pink); }
+.color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+  transition: border-color .15s, transform .12s;
+}
+.color-swatch.selected { border-color: var(--noir); transform: scale(1.15); }
+.modal-btns { display: flex; gap: 8px; margin-top: 1rem; }
+.modal-save {
+  flex: 1; background: var(--mk-pink); color: #fff; border: none; border-radius: 10px;
+  padding: 11px; font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 500;
+}
+.modal-cancel {
+  background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 16px; font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+
+.spacer { height: 3rem; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="header-title">Age's <span>Agenda</span></div>
+      <div class="header-date" id="todayDate"></div>
+    </div>
+    <div>
+      <div class="stats">
+        <div class="stat-pill" id="overdueCount" style="display:none; background:rgba(192,49,93,0.15); color:#E8417A; border-color:rgba(232,65,122,0.25);"></div>
+        <div class="stat-pill"><strong id="doneCountEl">0</strong> done</div>
+        <div class="stat-pill"><strong id="leftCountEl">0</strong> left</div>
+      </div>
+      <div class="progress-wrap" style="margin-top:8px;">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+  </div>
+</div>
+
+<!-- SORT BAR -->
+<div class="sort-bar">
+  <span class="sort-label">Sort:</span>
+  <button class="sort-btn active" onclick="setSort('priority',this)">Priority</button>
+  <button class="sort-btn" onclick="setSort('duedate',this)">Due date</button>
+  <button class="sort-btn" onclick="setSort('added',this)">Date added</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- ADD PANEL -->
+  <div class="add-panel">
+    <div class="add-row">
+      <input class="add-input" id="newTaskInput" type="text" placeholder="Add a task..." />
+      <button class="add-btn" onclick="addTask()">+</button>
+    </div>
+    <textarea class="add-note" id="newTaskNote" placeholder="Note (optional)..." rows="2"></textarea>
+    <div class="add-extras">
+      <select class="add-select" id="newTaskCat"></select>
+      <input class="add-date" id="newTaskDue" type="date" title="Due date (optional)" />
+      <button class="new-cat-btn" onclick="openNewCatModal()">+ Category</button>
+    </div>
+  </div>
+
+  <div id="taskList"></div>
+  <div class="spacer"></div>
+</div>
+
+<!-- EDIT DRAWER -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title" id="drawerTitle">Edit task</div>
+  <div class="drawer-field">
+    <label class="drawer-label">Task</label>
+    <input class="drawer-input" id="drawerText" type="text" />
+  </div>
+  <div class="drawer-field">
+    <label class="drawer-label">Note</label>
+    <textarea class="drawer-textarea" id="drawerNote"></textarea>
+  </div>
+  <div class="drawer-row">
+    <div class="drawer-field">
+      <label class="drawer-label">Category</label>
+      <select class="drawer-select" id="drawerCat"></select>
+    </div>
+    <div class="drawer-field">
+      <label class="drawer-label">Priority</label>
+      <select class="drawer-select" id="drawerPriority">
+        <option value="urgent">🔴 Urgent</option>
+        <option value="high">🟡 High</option>
+        <option value="normal" selected>⚪ Normal</option>
+      </select>
+    </div>
+  </div>
+  <div class="drawer-field">
+    <label class="drawer-label">Due date</label>
+    <input class="drawer-date" id="drawerDue" type="date" />
+  </div>
+  <div class="drawer-btns">
+    <button class="drawer-cancel" onclick="closeDrawer()">Cancel</button>
+    <button class="drawer-save" onclick="saveDrawer()">Save changes</button>
+  </div>
+</div>
+
+<!-- NEW CATEGORY MODAL -->
+<div class="modal" id="newCatModal">
+  <div class="modal-box">
+    <div class="modal-title">New category</div>
+    <div class="modal-field">
+      <label class="modal-label">Name</label>
+      <input class="modal-input" id="newCatName" type="text" placeholder="e.g. Kingdom Creators" maxlength="24" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Color</label>
+      <div class="color-swatches" id="colorSwatches"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeNewCatModal()">Cancel</button>
+      <button class="modal-save" onclick="saveNewCat()">Add category</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'age-agenda-v5';
+const TODAY_STR = new Date().toISOString().slice(0,10);
+
+const SWATCH_COLORS = [
+  '#E8417A','#C8922A','#638FDD','#639922','#8A55CC','#E07040',
+  '#1A8A8A','#C05080','#4A7A3A','#8C6040','#3A60B0','#D04040'
+];
+
+const DEFAULT_CATS = [
+  { id: 'marykay',     label: 'Mary Kay',    color: '#D4537E' },
+  { id: 'videography', label: 'Videography', color: '#C8922A' },
+  { id: 'content',     label: 'Content',     color: '#638FDD' },
+  { id: 'church',      label: 'Church',      color: '#639922' },
+  { id: 'personal',    label: 'Personal',    color: '#8C7A87' },
+];
+
+const DEFAULT_TASKS = [
+  // MOVE — June 4 deadline
+  { id:1,  text:"Return apartment keys and do final walkthrough", note:"Don't leave without photos of the empty unit", cat:"personal",    priority:"urgent", due:"2026-06-04", done:false },
+  { id:2,  text:"Clean apartment to lease-end standard",          note:"Check lease for what's required to get deposit back",              cat:"personal",    priority:"urgent", due:"2026-06-04", done:false },
+  { id:3,  text:"Submit forwarding address with USPS",            note:"usps.com/move",                                                    cat:"personal",    priority:"urgent", due:"2026-06-04", done:false },
+  { id:4,  text:"Update address with Mary Kay InTouch",           note:"Products, commission checks, correspondence",                      cat:"marykay",     priority:"urgent", due:"2026-06-04", done:false },
+  { id:5,  text:"Update address with bank and subscriptions",     note:"Direct deposit, credit cards, any recurring deliveries",           cat:"personal",    priority:"urgent", due:"2026-06-04", done:false },
+  { id:6,  text:"Notify landlord in writing you've vacated",      note:"Paper trail for deposit return",                                   cat:"personal",    priority:"urgent", due:"2026-06-04", done:false },
+  // NEW PLACE SETUP
+  { id:7,  text:"Unpack and set up home workspace",               note:"Computer, monitors, ring light, hard drives — get work-ready first", cat:"personal",  priority:"high",   due:"2026-06-07", done:false },
+  { id:8,  text:"Set up MK product storage in new space",         note:"Inventory, shelving, easy access for orders",                      cat:"marykay",     priority:"high",   due:"2026-06-07", done:false },
+  { id:9,  text:"Organize camera gear and AV equipment",          note:"Charge batteries, check cards, store safely",                      cat:"videography", priority:"high",   due:"2026-06-07", done:false },
+  { id:10, text:"Transfer utilities and confirm internet is active", note:"Can't work without solid internet",                             cat:"personal",    priority:"high",   due:"2026-06-05", done:false },
+  // VIDEOGRAPHY
+  { id:11, text:"Confirm birthday party job details at Martin's West", note:"Baltimore 70th, verify date, call time, parking, contacts",   cat:"videography", priority:"high",   due:"", done:false },
+  { id:12, text:"Send contract or invoice to client",             note:"Keeler Productions, get it in writing if not already done",        cat:"videography", priority:"high",   due:"", done:false },
+  { id:13, text:"Build shot list for birthday party",             note:"Key moments, family shots, speeches, B-roll",                      cat:"videography", priority:"high",   due:"", done:false },
+  { id:14, text:"Full equipment check and pack list",             note:"Camera body, lenses, audio, batteries x2, cards x3, backup gear", cat:"videography", priority:"high",   due:"", done:false },
+  { id:15, text:"Drive and parking plan for Martin's West",       note:"Baltimore event, map it out ahead of time",                        cat:"videography", priority:"normal", due:"", done:false },
+  // MARY KAY
+  { id:16, text:"Send reengagement message to Legacy Leaders",    note:"Let them know you're back and what's coming in June",              cat:"marykay",     priority:"high",   due:"2026-06-05", done:false },
+  { id:17, text:"Send reengagement message to Million Dollar Visionaries", note:"Back and ready, here's the plan",                        cat:"marykay",     priority:"high",   due:"2026-06-05", done:false },
+  { id:18, text:"Follow up with Chelsea",                         note:"Priority prospect, re-warm the relationship after time away",      cat:"marykay",     priority:"high",   due:"2026-06-06", done:false },
+  { id:19, text:"Review 20-Day Selling Challenge results",        note:"May 12–31 wrapped, pull numbers, recognize participants, identify follow-up", cat:"marykay", priority:"high", due:"2026-06-07", done:false },
+  { id:20, text:"Check GroupMe bot and confirm posts still running", note:"Daily 7 AM Eastern bot on Vercel/Supabase",                    cat:"marykay",     priority:"high",   due:"2026-06-04", done:false },
+  { id:21, text:"Map out June unit activity plan",                note:"Challenges, incentives, dates for both units",                     cat:"marykay",     priority:"normal", due:"2026-06-08", done:false },
+  { id:22, text:"Check Points to Paradise team standings",        note:"May–October challenge, see where everyone landed after May",       cat:"marykay",     priority:"normal", due:"", done:false },
+  { id:23, text:"Pull InTouch reports for both units",            note:"Check production numbers after the cruise gap",                    cat:"marykay",     priority:"normal", due:"", done:false },
+  { id:24, text:"Restock or order MK inventory as needed",        note:"Especially if anything sold while you were away",                  cat:"marykay",     priority:"normal", due:"", done:false },
+  // CONTENT
+  { id:25, text:"Film a post-cruise reintroduction reel",         note:"Magnetic Main Character content, you're back and you've got stories", cat:"content",  priority:"high",   due:"2026-06-07", done:false },
+  { id:26, text:"Get back on the 30-day content calendar",        note:"@agepatrice on IG, TikTok, Facebook",                              cat:"content",     priority:"high",   due:"2026-06-06", done:false },
+  { id:27, text:"Plan and batch content for this week",           note:"At least 3 posts scheduled so you stay consistent through the chaos", cat:"content",   priority:"normal", due:"2026-06-07", done:false },
+  { id:28, text:"Deploy updated Agenda app to Vercel",            note:"age-list-six.vercel.app",                                          cat:"content",     priority:"normal", due:"", done:false },
+  // CHURCH + KINGDOM
+  { id:29, text:"Check in with Mt. Zion on AV and social media",  note:"Anything that needs attention after your absence",                 cat:"church",      priority:"normal", due:"", done:false },
+  { id:30, text:"Kingdom Creators planning",                       note:"Pick up outreach and programming planning where you left off",     cat:"church",      priority:"normal", due:"", done:false },
+  // PERSONAL
+  { id:31, text:"Actually rest before going full throttle",        note:"You moved and came off a cruise in the same week. Grace, not grind.", cat:"personal", priority:"normal", due:"", done:false },
+  { id:32, text:"Check in with your mom",                          note:"She's your accountability partner, loop her into where you're at", cat:"personal",   priority:"normal", due:"", done:false },
+];
+
+// ── STATE ──
+let tasks = [];
+let cats = [];
+let activeFilter = 'all';
+let activeSort = 'priority';
+let showDone = false;
+let nextId = 100;
+let editingId = null;
+let selectedSwatch = SWATCH_COLORS[0];
+
+// ── PERSIST ──
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks, cats, nextId })); } catch(e) {}
+}
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const d = JSON.parse(saved);
+      tasks = d.tasks || DEFAULT_TASKS;
+      cats = d.cats || DEFAULT_CATS;
+      nextId = d.nextId || 100;
+    } else {
+      tasks = DEFAULT_TASKS;
+      cats = DEFAULT_CATS;
+    }
+  } catch(e) { tasks = DEFAULT_TASKS; cats = DEFAULT_CATS; }
+  renderFilterBar();
+  populateCatSelects();
+  render();
+  setDateDisplay();
+}
+
+// ── DATE HELPERS ──
+function setDateDisplay() {
+  const d = new Date();
+  document.getElementById('todayDate').textContent =
+    d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const due = new Date(dateStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((due - now) / 86400000);
+}
+
+function dueBadgeHTML(dateStr) {
+  if (!dateStr) return '';
+  const days = daysUntil(dateStr);
+  const label = days < 0
+    ? (days === -1 ? 'Yesterday' : Math.abs(days) + 'd ago')
+    : days === 0 ? 'Today'
+    : days === 1 ? 'Tomorrow'
+    : formatDueLabel(dateStr);
+  const cls = days < 0 ? 'due-overdue' : days <= 3 ? 'due-soon' : 'due-normal';
+  return `<span class="due-badge ${cls}">📅 ${label}</span>`;
+}
+
+function formatDueLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// ── CAT HELPERS ──
+function getCat(id) { return cats.find(c => c.id === id) || { label: id, color: '#999' }; }
+
+function catBadgeHTML(catId) {
+  const c = getCat(catId);
+  const bg = hexToRgba(c.color, 0.14);
+  return `<span class="cat-badge" style="background:${bg};color:${c.color};">${c.label}</span>`;
+}
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function catBorderColor(catId) {
+  return getCat(catId).color;
+}
+
+// ── FILTER BAR ──
+function renderFilterBar() {
+  const bar = document.getElementById('filterBar');
+  let html = `<button class="filter-btn ${activeFilter==='all'?'active':''}" onclick="setFilter('all',this)">All</button>`;
+  cats.forEach(c => {
+    html += `<button class="filter-btn ${activeFilter===c.id?'active':''}" onclick="setFilter('${c.id}',this)">
+      <span class="dot" style="background:${c.color};"></span>${c.label}
+    </button>`;
+  });
+  bar.innerHTML = html;
+}
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  renderFilterBar();
+  render();
+}
+
+// ── SORT ──
+function setSort(s, btn) {
+  activeSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function sortTasks(arr) {
+  if (activeSort === 'priority') {
+    const p = t => t.priority==='urgent'?0:t.priority==='high'?1:2;
+    return [...arr].sort((a,b) => p(a)-p(b));
+  }
+  if (activeSort === 'duedate') {
+    return [...arr].sort((a,b) => {
+      if (!a.due && !b.due) return 0;
+      if (!a.due) return 1;
+      if (!b.due) return -1;
+      return a.due.localeCompare(b.due);
+    });
+  }
+  // added (desc by id)
+  return [...arr].sort((a,b) => b.id - a.id);
+}
+
+// ── CAT SELECTS ──
+function populateCatSelects() {
+  ['newTaskCat','drawerCat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = cats.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+  });
+}
+
+// ── ADD TASK ──
+function addTask() {
+  const input = document.getElementById('newTaskInput');
+  const note = document.getElementById('newTaskNote');
+  const cat = document.getElementById('newTaskCat').value;
+  const due = document.getElementById('newTaskDue').value;
+  const text = input.value.trim();
+  if (!text) { input.focus(); return; }
+  tasks.unshift({ id: nextId++, text, note: note.value.trim(), cat, priority:'normal', due, done:false });
+  input.value = '';
+  note.value = '';
+  document.getElementById('newTaskDue').value = '';
+  save(); render(); input.focus();
+}
+
+document.getElementById('newTaskInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+// ── TOGGLE DONE ──
+function toggleDone(id) {
+  const t = tasks.find(t => t.id===id);
+  if (t) { t.done = !t.done; save(); render(); }
+}
+
+// ── DELETE ──
+function deleteTask(id, e) {
+  e.stopPropagation();
+  if (!confirm('Remove this task?')) return;
+  tasks = tasks.filter(t => t.id!==id);
+  save(); render();
+}
+
+// ── DRAWER ──
+function openDrawer(id, e) {
+  e.stopPropagation();
+  const t = tasks.find(t => t.id===id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('drawerTitle').textContent = 'Edit task';
+  document.getElementById('drawerText').value = t.text;
+  document.getElementById('drawerNote').value = t.note || '';
+  document.getElementById('drawerDue').value = t.due || '';
+  populateCatSelects();
+  document.getElementById('drawerCat').value = t.cat;
+  document.getElementById('drawerPriority').value = t.priority;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  editingId = null;
+}
+
+function saveDrawer() {
+  const t = tasks.find(t => t.id===editingId);
+  if (!t) return;
+  const text = document.getElementById('drawerText').value.trim();
+  if (!text) return;
+  t.text = text;
+  t.note = document.getElementById('drawerNote').value.trim();
+  t.cat = document.getElementById('drawerCat').value;
+  t.priority = document.getElementById('drawerPriority').value;
+  t.due = document.getElementById('drawerDue').value;
+  save(); render(); closeDrawer();
+}
+
+// ── NEW CATEGORY MODAL ──
+function openNewCatModal() {
+  document.getElementById('newCatName').value = '';
+  selectedSwatch = SWATCH_COLORS[0];
+  renderSwatches();
+  document.getElementById('newCatModal').classList.add('open');
+  setTimeout(() => document.getElementById('newCatName').focus(), 200);
+}
+
+function closeNewCatModal() {
+  document.getElementById('newCatModal').classList.remove('open');
+}
+
+function renderSwatches() {
+  const el = document.getElementById('colorSwatches');
+  el.innerHTML = SWATCH_COLORS.map(c =>
+    `<div class="color-swatch ${c===selectedSwatch?'selected':''}" style="background:${c};" onclick="selectSwatch('${c}')"></div>`
+  ).join('');
+}
+
+function selectSwatch(c) {
+  selectedSwatch = c;
+  renderSwatches();
+}
+
+function saveNewCat() {
+  const name = document.getElementById('newCatName').value.trim();
+  if (!name) { document.getElementById('newCatName').focus(); return; }
+  const id = 'cat_' + Date.now();
+  cats.push({ id, label: name, color: selectedSwatch });
+  save(); renderFilterBar(); populateCatSelects();
+  closeNewCatModal();
+}
+
+// ── RENDER ──
+function render() {
+  const list = document.getElementById('taskList');
+  const filtered = activeFilter === 'all' ? tasks : tasks.filter(t => t.cat===activeFilter);
+  const active = filtered.filter(t => !t.done);
+  const done = filtered.filter(t => t.done);
+
+  // split active into overdue and upcoming
+  const overdue = sortTasks(active.filter(t => t.due && daysUntil(t.due) < 0));
+  const upcoming = sortTasks(active.filter(t => !t.due || daysUntil(t.due) >= 0));
+
+  // stats
+  const allTotal = tasks.length;
+  const allDone = tasks.filter(t => t.done).length;
+  const allOverdue = tasks.filter(t => !t.done && t.due && daysUntil(t.due) < 0).length;
+  document.getElementById('doneCountEl').textContent = allDone;
+  document.getElementById('leftCountEl').textContent = allTotal - allDone;
+  document.getElementById('progressBar').style.width = (allTotal ? Math.round(allDone/allTotal*100) : 0) + '%';
+  const op = document.getElementById('overdueCount');
+  if (allOverdue > 0) { op.style.display=''; op.innerHTML = `<strong style="color:var(--overdue)">⚠ ${allOverdue}</strong> overdue`; }
+  else { op.style.display='none'; }
+
+  let html = '';
+
+  if (overdue.length > 0) {
+    html += `<div class="section-label section-overdue"><span class="section-label-text">⚠ Overdue</span><span class="section-count">${overdue.length}</span><div class="section-line" style="background:rgba(192,49,93,0.2)"></div></div>`;
+    overdue.forEach(t => { html += taskHTML(t); });
+  }
+
+  if (upcoming.length > 0) {
+    html += sectionLabel('Up next', upcoming.length);
+    upcoming.forEach(t => { html += taskHTML(t); });
+  }
+
+  if (overdue.length === 0 && upcoming.length === 0 && done.length === 0) {
+    html = '<div class="empty-state">Nothing here yet. Add something above.</div>';
+  }
+
+  if (done.length > 0) {
+    html += `<div style="margin-top:1rem;">
+      <button class="done-toggle ${showDone?'open':''}" onclick="toggleDoneSection()">
+        <span class="done-toggle-arrow">▶</span>&nbsp;${done.length} completed
+      </button>
+    </div>`;
+    if (showDone) { done.forEach(t => { html += taskHTML(t); }); }
+  }
+
+  list.innerHTML = html;
+}
+
+function sectionLabel(label, count) {
+  return `<div class="section-label"><span class="section-label-text">${label}</span><span class="section-count">${count}</span><div class="section-line"></div></div>`;
+}
+
+function taskHTML(t) {
+  const c = getCat(t.cat);
+  const days = daysUntil(t.due);
+  const isOverdue = t.due && days < 0 && !t.done;
+  const pDot = `<div class="priority-dot p-${t.priority==='urgent'?'urgent':t.priority==='high'?'high':'normal'}"></div>`;
+  return `<div class="task-card ${t.done?'done':''} ${isOverdue?'overdue-card':''}"
+    style="--cat-color:${c.color}; border-left-color:${c.color}22;"
+    onclick="toggleDone(${t.id})">
+    <style>.task-card[onclick="toggleDone(${t.id})"]:before{background:${c.color}}</style>
+    <div class="task-check"></div>
+    <div class="task-body">
+      <div class="task-text">${escHtml(t.text)}</div>
+      ${t.note ? `<div class="task-note">${escHtml(t.note)}</div>` : ''}
+      <div class="task-meta">
+        ${pDot}
+        ${catBadgeHTML(t.cat)}
+        ${t.due ? dueBadgeHTML(t.due) : ''}
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="task-action-btn task-edit-btn" onclick="openDrawer(${t.id},event)" title="Edit">✏️</button>
+      <button class="task-action-btn task-delete-btn" onclick="deleteTask(${t.id},event)" title="Delete">×</button>
+    </div>
+  </div>`;
+}
+
+function toggleDoneSection() { showDone = !showDone; render(); }
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+renderSwatches();
+</script>
+</body>
+</html>
